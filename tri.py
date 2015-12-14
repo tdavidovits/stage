@@ -29,7 +29,7 @@ for i in range(0, len(t)):
   for j in range(i+1, len(t)):
     b=int(t[j])
 #    print b
-    if a>b:
+    if a<b:
       a=b
       idx = j
 #      print 'idx %s'%idx
