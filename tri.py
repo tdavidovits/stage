@@ -38,4 +38,4 @@ for i in range(0, len(t)):
   r[i]=a
   t[idx]=str(t[i])
 
-print r
+print 'resultat %s' % r
