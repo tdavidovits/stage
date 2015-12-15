@@ -16,9 +16,9 @@
 #!/bin/python
 
 import sys
-print sys.argv[1:]
+print "origin %s"% sys.argv[1:]
 
-#t = [5, 7, 13, 8, 9, 34]
+
 t = sys.argv[1:]
 #print t
 r = list(t)
