@@ -14,8 +14,7 @@
 #J. Carsique
 # implemente NXBT-736: cleanup deprecated branches
 
-#declare -a array
-
+JIRA_PROJECTS="NXP|NXBT|APG|NXDRIVE|NXROADMAP"
 # Output files
 FILE_LIST=/tmp/cleanup-complete
 FILE_UNKNOWN=/tmp/cleanup-unknown
@@ -28,6 +27,7 @@ analyze() {
 	echo "# Branches to delete" > $FILE_DELETE
 	echo "# Active branches to keep (reason within parenthesis)" > $FILE_KEEP
 
+	git fetch --prune
 	complete=`git branch -r`
 
 	echo "Nb branches before cleanup: $(echo $complete|wc -w)"
@@ -38,8 +38,10 @@ analyze() {
 
 	echo "Looking for branches older than 3 months and which JIRA issue is resolved or closed..."
 	for branch in $complete; do
-		echo "working on $branch" >> $FILE_LIST
-		for pattern in "^origin/master$" "^origin/stable$" "^origin/\d+\.\d+(\.\d+)?-HF\d\d-SNAPSHOT$" "^origin/\d+\.\d+(\.\d+)?$" ; do
+		echo "$branch" >> $FILE_LIST
+		for pattern in "^origin/master$" "^origin/stable$" "5.4.2-I20110404_0115" "origin/5.3.2" \
+						"^origin/\d+\.\d+(\.\d+)?-HF\d\d-SNAPSHOT$" \
+						"^origin/\d+\.\d+(\.\d+)?$"; do
 			if [[ $branch =~ $pattern ]]; then
 				echo "$branch (pattern $pattern)" >> $FILE_KEEP
 				continue 2
@@ -47,7 +49,7 @@ analyze() {
 		done
 
 		if [ -z "$(git log -1 --since='3 months ago' --oneline $branch)" ]; then
-		    jira=$(echo "$branch" | awk 'match($0,"(NXP|NXBT)-[0-9]+") {print substr($0,RSTART,RLENGTH)}')
+		    jira=$(echo "$branch" | awk 'match($0,"($JIRA_PROJECTS)-[0-9]+") {print substr($0,RSTART,RLENGTH)}')
 			if [ -z "$jira" ]; then
 				echo $branch >> $FILE_UNKNOWN
 				continue
@@ -80,10 +82,14 @@ analyze() {
 }
 
 perform() {
-	while read branch; do
-		[[ $branch =~ "^#" ]] && continue
-		git push --delete origin "$branch"
-	done < "$FILE_DELETE"
+	branches=""
+	while read line; do
+		[[ $line =~ ^"#" ]] && continue
+		branch=${line#origin/}
+		branch=${branch%% *}
+		branches+=" $branch"
+	done < "$1"
+	git push --delete origin $branches
 	git reflog expire --all --expire=now
 	git gc --prune=now --aggressive
 	echo "Nb branches after cleanup: $(git branch -r|wc -l)"
@@ -92,7 +98,7 @@ perform() {
 }
 
 if [ "$#" -eq 0 ]; then
-	echo "Usage: $0 [analyze|perform|full]"
+	echo "Usage: $0 [analyze|full|perform [<source file>]]"
 	exit 1
 elif [ "$1" = "analyze" ]; then
 	analyze
@@ -100,7 +106,11 @@ elif [ "$1" = "full" ]; then
 	analyze
 	perform
 elif [ "$1" = "perform" ]; then
-	perform
+	if [ "$#" -eq 2 ]; then
+		perform $2
+	else
+		perform $FILE_DELETE
+	fi
 fi
 exit 0
 
