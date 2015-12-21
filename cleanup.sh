@@ -14,7 +14,7 @@
 #J. Carsique
 # implemente NXBT-736: cleanup deprecated branches
 
-JIRA_PROJECTS="NXP|NXBT|APG|NXDRIVE|NXROADMAP"
+JIRA_PROJECTS="NXP|NXBT|APG|NXDRIVE|NXROADMAP|NXS|NXMOB|NXDOC"
 # Output files
 FILE_LIST=/tmp/cleanup-complete
 FILE_UNKNOWN=/tmp/cleanup-unknown
@@ -36,8 +36,10 @@ analyze() {
 	echo "Nb commit objects before cleanup: $(git rev-list --objects --all|wc -l)"
 	git count-objects -vH
 
-	echo "Looking for branches older than 3 months and which JIRA issue is resolved or closed..."
+	echo "Looking for branches older than 3 months and which JIRA issue is resolved or closed, and with no 'backport-*' tag..."
 	for branch in $complete; do
+		# TODO display smarter progress
+		echo -n '.'
 		echo "$branch" >> $FILE_LIST
 		for pattern in "^origin/master$" "^origin/stable$" "5.4.2-I20110404_0115" "origin/5.3.2" \
 						"^origin/\d+\.\d+(\.\d+)?-HF\d\d-SNAPSHOT$" \
@@ -49,9 +51,9 @@ analyze() {
 		done
 
 		if [ -z "$(git log -1 --since='3 months ago' --oneline $branch)" ]; then
-		    jira=$(echo "$branch" | awk 'match($0,"($JIRA_PROJECTS)-[0-9]+") {print substr($0,RSTART,RLENGTH)}')
+		    jira=$(echo "$branch" | awk -v jira_pattern="($JIRA_PROJECTS)-[0-9]+" 'match($0, jira_pattern) {print substr($0,RSTART,RLENGTH)}')
 			if [ -z "$jira" ]; then
-				echo $branch >> $FILE_UNKNOWN
+				echo "$branch (name does not match '($JIRA_PROJECTS)-[0-9]+')" >> $FILE_UNKNOWN
 				continue
 			fi
 			# Check JIRA ref exists
@@ -89,6 +91,7 @@ perform() {
 		branch=${branch%% *}
 		branches+=" $branch"
 	done < "$1"
+	[ -z "$branches" ] && echo "Nothing to delete in file $1" && return
 	git push --delete origin $branches
 	git reflog expire --all --expire=now
 	git gc --prune=now --aggressive
@@ -104,13 +107,17 @@ elif [ "$1" = "analyze" ]; then
 	analyze
 elif [ "$1" = "full" ]; then
 	analyze
-	perform
+	echo
+	perform $FILE_DELETE
 elif [ "$1" = "perform" ]; then
 	if [ "$#" -eq 2 ]; then
 		perform $2
 	else
 		perform $FILE_DELETE
 	fi
+else
+	echo "Usage: $0 [analyze|full|perform [<source file>]]"
+	exit 1
 fi
 exit 0
 
