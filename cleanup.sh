@@ -61,7 +61,7 @@ analyze() {
 			fi
 		done
 
-		author=$(git log -1 --pretty=format:'%aE' $branch)
+		author=$(git log -1 --no-merges --grep="Merge branch '.*' from multiple repositories" --invert-grep --pretty=format:'%aE' $branch)
 		if [ -z "$(git log -1 --since='3 months ago' --oneline $branch)" ]; then
 		    jira=$(echo "$branch" | awk -v jira_pattern="($JIRA_PROJECTS)-[0-9]+" 'match($0, jira_pattern) {print substr($0,RSTART,RLENGTH)}')
 			if [ -z "$jira" ]; then
@@ -123,7 +123,7 @@ test() {
 	branch=$1
 	echo ">> Get author..."
 	set -x
-	git log -1 --pretty=format:'%aE' $branch
+	git log -1 --no-merges --grep="Merge branch '.*' from multiple repositories" --invert-grep --pretty=format:'%aE' $branch
 	{ set +x; } 2>/dev/null
 
 	echo -e "\n>> Extract JIRA reference..."
