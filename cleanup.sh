@@ -19,14 +19,17 @@
 # Implement NXBT-736: cleanup deprecated branches
 
 JIRA_PROJECTS="NXP|NXBT|APG|NXDRIVE|NXROADMAP|NXS|NXMOB|NXDOC"
-PATTERNS='^origin/master$ ^origin/stable$ 5.4.2-I20110404_0115 \
- ^origin/[0-9]+\.[0-9]+(\.[0-9]+)?-HF[0-9]+-SNAPSHOT$ \
- ^origin/[0-9]+(\.[0-9]+)+$'
+PATTERNS='^origin/master$ \
+ ^origin/[0-9]+(\.[0-9]+)+-SNAPSHOT$ \
+ ^origin/[0-9]+(\.[0-9]+)+-HF[0-9]+-SNAPSHOT$ \
+ ^origin/[0-9]+(\.[0-9]+)+$ \
+ 5.4.2-I20110404_0115'
 # Output files
-FILE_LIST=/tmp/cleanup-complete
-FILE_UNKNOWN=/tmp/cleanup-unknown
-FILE_DELETE=/tmp/cleanup-delete
-FILE_KEEP=/tmp/cleanup-keep
+basedir=${PWD##*/}
+FILE_LIST=/tmp/cleanup-$basedir-complete
+FILE_UNKNOWN=/tmp/cleanup-$basedir-unknown
+FILE_DELETE=/tmp/cleanup-$basedir-delete
+FILE_KEEP=/tmp/cleanup-$basedir-keep
 
 die() {
     #echo -e "${BASH_SOURCE[1]}:${BASH_LINENO[0]} (${FUNCNAME[1]}) ${1-die!}" >&2
